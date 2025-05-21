@@ -1,0 +1,8 @@
+/android/
+/ios/
+/web/
+/.dart_tool/
+/.idea/
+/build/
+/pubspec.lock
+.DS_Store
