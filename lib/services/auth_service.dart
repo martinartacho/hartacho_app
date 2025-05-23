@@ -1,16 +1,21 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // Para kIsWeb
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl =
-      'http://10.0.2.2:8000/api'; // Usa 10.0.2.2 para emulador Android
+  static final String baseUrl = kIsWeb
+      ? 'http://mhartacho.test/api' // Web: dominio local
+      : 'http://10.0.2.2:8000/api'; // Android emulator
 
   static Future<bool> login(String email, String password) async {
     final url = Uri.parse('$baseUrl/login');
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: jsonEncode({'email': email, 'password': password}),
     );
 
@@ -23,6 +28,7 @@ class AuthService {
 
       return true;
     } else {
+      print('Login failed: ${response.body}');
       return false;
     }
   }

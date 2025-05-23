@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hartacho_app/services/auth_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hartacho_app/screens/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,60 +12,80 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  void _handleLogin() async {
+  bool isLoading = false;
+  String? errorMessage;
+
+  Future<void> login() async {
     setState(() {
-      _isLoading = true;
+      isLoading = true;
+      errorMessage = null;
     });
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    bool success = await AuthService.login(email, password);
+    final response = await http.post(
+      Uri.parse('http://mhartacho.test/api/login'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'email': emailController.text.trim(),
+        'password': passwordController.text.trim(),
+      }),
+    );
 
     setState(() {
-      _isLoading = false;
+      isLoading = false;
     });
 
-    if (success) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login fallido. Verifica tus credenciales.'),
-        ),
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final token = data['access_token'];
+      final user = data['user'];
+      // Guardar token y user info en SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', token);
+      await prefs.setString('user', jsonEncode(user));
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
       );
+    } else {
+      final data = json.decode(response.body);
+      setState(() {
+        errorMessage = data['message'] ?? 'Error desconocido';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Iniciar sesión')),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            if (errorMessage != null)
+              Text(errorMessage!, style: const TextStyle(color: Colors.red)),
+
             TextField(
-              controller: _emailController,
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Correo electrónico',
-              ),
             ),
             TextField(
-              controller: _passwordController,
-              obscureText: true,
+              controller: passwordController,
               decoration: const InputDecoration(labelText: 'Contraseña'),
+              obscureText: true,
             ),
-            const SizedBox(height: 20),
-            _isLoading
+            const SizedBox(height: 16),
+            isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
-                    onPressed: _handleLogin,
+                    onPressed: login,
                     child: const Text('Iniciar sesión'),
                   ),
           ],

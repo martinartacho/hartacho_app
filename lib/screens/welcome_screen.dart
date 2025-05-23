@@ -14,11 +14,10 @@ class WelcomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              //const FlutterLogo(size: 100),
               SvgPicture.asset('assets/images/h.svg', height: 120),
               const SizedBox(height: 20),
               const Text(
-                '¡Bienvenido a Hartacho!',
+                '¡Welcome a Hartacho!',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
